@@ -1,77 +1,76 @@
-import { ForbiddenException, Injectable } from '@nestjs/common';
+import {
+  ConsoleLogger,
+  ForbiddenException,
+  Injectable,
+  InternalServerErrorException,
+} from '@nestjs/common';
 import { AuthDto } from './dto';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
 import { ConfigService } from '@nestjs/config';
+import * as AWS from 'aws-sdk';
 
 @Injectable()
 export class AuthService {
   constructor(private jwt: JwtService, private config: ConfigService) {}
 
   async signup(dto: AuthDto) {
-    const user = { id: 123, email: 'asharib@gmail.com' };
+    // Create the DynamoDB service object
+    const dynamoDB = this.getDynamoDB();
 
-    // // generate the password hash
-    // const hash = await argon.hash(dto.password);
-    // // save the new user in the db
-    // try {
-    //     const user = await this.prisma.user.create({
-    //         data: {
-    //             email: dto.email,
-    //             hash,
-    //         },
-    //     });
+    const getParams = {
+      TableName: 'client',
+      Key: { email: dto.email },
+    };
 
-    return this.signToken(user.id, user.email);
-    // } catch (error) {
-    //     if (
-    //         error instanceof
-    //         PrismaClientKnownRequestError
-    //     ) {
-    //         if (error.code === 'P2002') {
-    //             throw new ForbiddenException(
-    //                 'Credentials taken',
-    //             );
-    //         }
-    //     }
-    //     throw error;
-    // }
+    const user = await dynamoDB.get(getParams).promise();
+
+    if (user?.Item) throw new ForbiddenException('Credentials taken');
+
+    const { email, name }: AuthDto = dto;
+
+    // generate the password hash
+    const hash = await argon.hash(dto.password);
+
+    const putParams = {
+      TableName: 'client',
+      Item: {
+        email: email,
+        hash: hash,
+        name: name,
+        wallet: Number(0),
+      },
+    };
+
+    await dynamoDB.put(putParams).promise();
+
+    return this.signToken(email);
   }
-
   async signin(dto: AuthDto) {
-    const user = { id: 123, email: 'asharib@gmail.com' };
-    // find the user by email
-    // const user =
-    //     await this.prisma.user.findUnique({
-    //         where: {
-    //             email: dto.email,
-    //         },
-    //     });
-    // // if user does not exist throw exception
-    // if (!user)
-    //     throw new ForbiddenException(
-    //         'Credentials incorrect',
-    //     );
+    // Create the DynamoDB service object
+    const dynamoDB = this.getDynamoDB();
 
-    // // compare password
-    // const pwMatches = await argon.verify(
-    //     user.hash,
-    //     dto.password,
-    // );
-    // // if password incorrect throw exception
-    // if (!pwMatches)
-    //     throw new ForbiddenException(
-    //         'Credentials incorrect',
-    //     );
-    return this.signToken(user.id, user.email);
+    const getParams = {
+      TableName: 'client',
+      Key: { email: dto.email },
+    };
+
+    const user = await dynamoDB.get(getParams).promise();
+
+    // if user does not exist throw exception
+    if (!user?.Item) throw new ForbiddenException('Credentials incorrect');
+
+    // compare password
+    const pwMatches = await argon.verify(user.Item.hash, dto.password);
+
+    // if password incorrect throw exception
+    if (!pwMatches) throw new ForbiddenException('Credentials incorrect');
+
+    return this.signToken(user.Item.email);
   }
 
-  async signToken(
-    userId: number,
-    email: string,
-  ): Promise<{ access_token: string }> {
+  async signToken(email: string): Promise<{ access_token: string }> {
     const payload = {
-      sub: userId,
       email,
     };
     const secret = this.config.get('JWT_SECRET');
@@ -84,5 +83,13 @@ export class AuthService {
     return {
       access_token: token,
     };
+  }
+
+  getDynamoDB() {
+    return new AWS.DynamoDB.DocumentClient({
+      accessKeyId: this.config.get('AWS_ACCESS_KEY_ID'),
+      secretAccessKey: this.config.get('AWS_SECRET_ACCESS_KEY'),
+      region: this.config.get('AWS_REGION'),
+    });
   }
 }

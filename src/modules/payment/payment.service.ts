@@ -1,36 +1,34 @@
 import { Injectable } from '@nestjs/common';
-import { EditUserDto } from './dto';
+import { AddPaymentDto } from './dto';
 import { ConfigService } from '@nestjs/config';
 import * as AWS from 'aws-sdk';
 
 @Injectable()
-export class UserService {
+export class PaymentService {
   constructor(private config: ConfigService) { }
 
-  async editUser(email: string, dto: EditUserDto) {
+  async addPayment(email: string, dto: AddPaymentDto) {
     // Create the DynamoDB service object
     const dynamoDB = this.getDynamoDB();
+
+    console.log(dto, 'dto');
 
     const putParams = {
       TableName: 'client',
       Key: { email: email },
-      UpdateExpression: 'set #MyVariable = :x',
-      // This expression is what updates the item attribute
-      ExpressionAttributeNames: {
-        '#MyVariable': 'name',
-      },
-      //create an Expression Attribute Value to pass in the expression above
+      UpdateExpression: 'ADD wallet :increase',
       ExpressionAttributeValues: {
-        ':x': dto.name,
+        ':increase': Number(2)
       },
-      ReturnValues: 'ALL_NEW',
     };
 
-    const user = await dynamoDB.update(putParams).promise();
+    // UpdateExpression = 'SET #usage = #usage + :increase',
 
-    delete user.Attributes.hash;
+    const payment = await dynamoDB.update(putParams).promise();
 
-    return user.Attributes;
+    delete payment.Attributes.hash;
+
+    return payment.Attributes;
   }
 
   getDynamoDB() {
