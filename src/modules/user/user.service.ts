@@ -5,12 +5,13 @@ import * as AWS from 'aws-sdk';
 
 @Injectable()
 export class UserService {
-  constructor(private config: ConfigService) { }
+  constructor(private config: ConfigService) {}
 
   async editUser(email: string, dto: EditUserDto) {
     // Create the DynamoDB service object
     const dynamoDB = this.getDynamoDB();
 
+    //set params
     const putParams = {
       TableName: 'client',
       Key: { email: email },
@@ -26,13 +27,16 @@ export class UserService {
       ReturnValues: 'ALL_NEW',
     };
 
+    //Update DynamoDB
     const user = await dynamoDB.update(putParams).promise();
 
+    //Remove hash because its secret
     delete user.Attributes.hash;
 
     return user.Attributes;
   }
 
+  //Config DynamoDB
   getDynamoDB() {
     return new AWS.DynamoDB.DocumentClient({
       accessKeyId: this.config.get('AWS_ACCESS_KEY_ID'),

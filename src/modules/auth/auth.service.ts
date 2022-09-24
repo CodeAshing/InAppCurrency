@@ -1,9 +1,4 @@
-import {
-  ConsoleLogger,
-  ForbiddenException,
-  Injectable,
-  InternalServerErrorException,
-} from '@nestjs/common';
+import { ForbiddenException, Injectable } from '@nestjs/common';
 import { AuthDto } from './dto';
 import * as argon from 'argon2';
 import { JwtService } from '@nestjs/jwt';
@@ -18,13 +13,16 @@ export class AuthService {
     // Create the DynamoDB service object
     const dynamoDB = this.getDynamoDB();
 
+    //set params
     const getParams = {
       TableName: 'client',
       Key: { email: dto.email },
     };
 
+    //Fetch data
     const user = await dynamoDB.get(getParams).promise();
 
+    // Throw exception if the email is already exist
     if (user?.Item) throw new ForbiddenException('Credentials taken');
 
     const { email, name }: AuthDto = dto;
@@ -32,6 +30,7 @@ export class AuthService {
     // generate the password hash
     const hash = await argon.hash(dto.password);
 
+    //set params
     const putParams = {
       TableName: 'client',
       Item: {
@@ -42,19 +41,23 @@ export class AuthService {
       },
     };
 
+    //Update DynamoDB
     await dynamoDB.put(putParams).promise();
 
     return this.signToken(email);
   }
-  async signin(dto: AuthDto) {
+
+  async signing(dto: AuthDto) {
     // Create the DynamoDB service object
     const dynamoDB = this.getDynamoDB();
 
+    //set params
     const getParams = {
       TableName: 'client',
       Key: { email: dto.email },
     };
 
+    //Fetch data
     const user = await dynamoDB.get(getParams).promise();
 
     // if user does not exist throw exception
@@ -69,10 +72,12 @@ export class AuthService {
     return this.signToken(user.Item.email);
   }
 
+  //Method for generating the JWT Token by email
   async signToken(email: string): Promise<{ access_token: string }> {
     const payload = {
       email,
     };
+
     const secret = this.config.get('JWT_SECRET');
 
     const token = await this.jwt.signAsync(payload, {
@@ -85,6 +90,7 @@ export class AuthService {
     };
   }
 
+  //Config DynamoDB
   getDynamoDB() {
     return new AWS.DynamoDB.DocumentClient({
       accessKeyId: this.config.get('AWS_ACCESS_KEY_ID'),

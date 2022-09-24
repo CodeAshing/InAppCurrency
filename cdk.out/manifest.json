@@ -1,0 +1,94 @@
+{
+  "version": "21.0.0",
+  "artifacts": {
+    "Tree": {
+      "type": "cdk:tree",
+      "properties": {
+        "file": "tree.json"
+      }
+    },
+    "AssStack.assets": {
+      "type": "cdk:asset-manifest",
+      "properties": {
+        "file": "AssStack.assets.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+      }
+    },
+    "AssStack": {
+      "type": "aws:cloudformation:stack",
+      "environment": "aws://unknown-account/unknown-region",
+      "properties": {
+        "templateFile": "AssStack.template.json",
+        "validateOnSynth": false,
+        "assumeRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-deploy-role-${AWS::AccountId}-${AWS::Region}",
+        "cloudFormationExecutionRoleArn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-cfn-exec-role-${AWS::AccountId}-${AWS::Region}",
+        "stackTemplateAssetObjectUrl": "s3://cdk-hnb659fds-assets-${AWS::AccountId}-${AWS::Region}/d5d4a49d728478ec97884cd7b4415da696f9b9431bdcbb83b6bb5a0548746a1d.json",
+        "requiresBootstrapStackVersion": 6,
+        "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version",
+        "additionalDependencies": [
+          "AssStack.assets"
+        ],
+        "lookupRole": {
+          "arn": "arn:${AWS::Partition}:iam::${AWS::AccountId}:role/cdk-hnb659fds-lookup-role-${AWS::AccountId}-${AWS::Region}",
+          "requiresBootstrapStackVersion": 8,
+          "bootstrapStackVersionSsmParameter": "/cdk-bootstrap/hnb659fds/version"
+        }
+      },
+      "dependencies": [
+        "AssStack.assets"
+      ],
+      "metadata": {
+        "/AssStack/AssQueue/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AssQueueE2928CD9"
+          }
+        ],
+        "/AssStack/AssQueue/Policy/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AssQueuePolicy5F8A6B1F"
+          }
+        ],
+        "/AssStack/AssQueue/AssStackAssTopicEE3358FF/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AssQueueAssStackAssTopicEE3358FFF9B9E2EF"
+          }
+        ],
+        "/AssStack/AssTopic/Resource": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "AssTopic27B500C2"
+          }
+        ],
+        "/AssStack/CDKMetadata/Default": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadata"
+          }
+        ],
+        "/AssStack/CDKMetadata/Condition": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CDKMetadataAvailable"
+          }
+        ],
+        "/AssStack/BootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "BootstrapVersion"
+          }
+        ],
+        "/AssStack/CheckBootstrapVersion": [
+          {
+            "type": "aws:cdk:logicalId",
+            "data": "CheckBootstrapVersion"
+          }
+        ]
+      },
+      "displayName": "AssStack"
+    }
+  }
+}
