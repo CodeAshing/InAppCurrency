@@ -14,7 +14,7 @@ import { UserService } from './user.service';
 @UseGuards(JwtGuard)
 @Controller('user')
 export class UserController {
-  constructor(private userService: UserService) {}
+  constructor(private userService: UserService) { }
 
   //Api for user data update
   @Patch()
